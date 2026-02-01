@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using DesperateDevs.Serialization;
 
 namespace Jenny.Plugins
@@ -14,6 +15,23 @@ namespace Jenny.Plugins
         };
 
         public string TargetDirectory => _preferences[_targetDirectoryKey].ToSafeDirectory();
+
+        public string GetPathRelativeTo(ProjectPathConfig projectPath)
+        {
+            if (projectPath.ProjectRoot.Length == 0)
+            {
+                return TargetDirectory;
+            }
+
+            if (!TargetDirectory.StartsWith(projectPath.ProjectRoot))
+            {
+                throw new Exception(
+                        $"Path {_targetDirectoryKey}: {TargetDirectory} is outside of the csproj direcotry: {projectPath.ProjectPath}. \n" +
+                        $"Did you mean: {projectPath.ProjectRoot + Path.DirectorySeparatorChar + TargetDirectory}?");
+            }
+
+            return TargetDirectory[(projectPath.ProjectRoot.Length + 1)..];
+        }
     }
 
     public static class TargetDirectoryStringExtension

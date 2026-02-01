@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+using System.IO;
+using System.Collections.Generic;
 using DesperateDevs.Serialization;
 
 namespace Jenny.Plugins
@@ -13,5 +14,6 @@ namespace Jenny.Plugins
         };
 
         public string ProjectPath => _preferences[_projectPathKey];
+        public string ProjectRoot => Path.GetDirectoryName(ProjectPath);
     }
 }

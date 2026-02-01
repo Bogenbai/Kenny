@@ -36,11 +36,14 @@ namespace Jenny.Plugins
 
         string RemoveExistingGeneratedEntries(string project)
         {
-            var escapedTargetDirectory = _targetDirectoryConfig.TargetDirectory
+            var escapedTargetDirectory = _targetDirectoryConfig
+                .GetPathRelativeTo(_projectPathConfig)
                 .Replace("/", "\\")
                 .Replace("\\", "\\\\");
 
-            var unixTargetDirectory = _targetDirectoryConfig.TargetDirectory.ToUnixPath();
+            var unixTargetDirectory = _targetDirectoryConfig
+                .GetPathRelativeTo(_projectPathConfig)
+                .ToUnixPath();
 
             project = Regex.Replace(project, $@"\s*<Compile Include=""{escapedTargetDirectory}.* \/>", string.Empty);
             project = Regex.Replace(project, $@"\s*<Compile Include=""{unixTargetDirectory}.* \/>", string.Empty);
@@ -51,7 +54,9 @@ namespace Jenny.Plugins
         {
             var entries = string.Join("\r\n", files.Select(file =>
             {
-                var path = Path.Combine(_targetDirectoryConfig.TargetDirectory, file.FileName).ToUnixPath();
+                var path = Path.Combine(_targetDirectoryConfig
+                        .GetPathRelativeTo(_projectPathConfig), file.FileName).ToUnixPath();
+
                 return $@"    <Compile Include=""{path}"" />";
             }));
 
