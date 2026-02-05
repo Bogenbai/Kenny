@@ -1,6 +1,6 @@
-![Jenny-Header](https://github.com/sschmid/Jenny/raw/main/readme/Jenny-Banner.png)
+<img width="1024" height="490" alt="kenny_logo" src="https://github.com/user-attachments/assets/7b707d30-20bb-48f7-93ab-c30678d20d17" />
 
-# Jenny - A lovely .NET Code Generator
+# Kenny - A lovely .NET Code Generator. Jenny's younger brother.
 
 [![CI](https://github.com/sschmid/Jenny/actions/workflows/ci.yml/badge.svg)](https://github.com/sschmid/Jenny/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/sschmid/Jenny/badge.svg)](https://coveralls.io/github/sschmid/Jenny)
@@ -8,6 +8,7 @@
 [![License: MIT](https://img.shields.io/github/license/sschmid/Jenny)](https://github.com/sschmid/Jenny/blob/main/LICENSE.md)
 [![Twitter](https://img.shields.io/twitter/follow/s_schmid)][twitter-sschmid]
 
+todo: redo install section
 # Install
 
 |                                 | NuGet                                                                                                                                | Unity Packages on [OpenUPM](https://openupm.com)                                                                                                                                                                                                   |
