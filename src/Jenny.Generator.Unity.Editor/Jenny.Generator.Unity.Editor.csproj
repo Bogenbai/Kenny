@@ -15,8 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="$(UnityEditor)" />
-    <Reference Include="$(UnityEngine)" />
     <Reference Include="UnityEditor">
       <HintPath>..\..\unity\Unity-2021.3.0f1\UnityEditor.dll</HintPath>
     </Reference>

@@ -1,27 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Usage:
-#   ./build_jenny.sh Release
-#   ./build_jenny.sh Debug
-#
-# Creates:
-#   Artifacts/Jenny/
-#   Artifacts/Jenny/Plugins/Jenny/
-#
-# And copies ONLY the explicitly listed files into those folders (missing files are skipped).
-
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG="${1:-Release}"
-
-# Pick solution
-if [[ -f "$SCRIPT_DIR/Jenny.sln" ]]; then
-  SOLUTION="$SCRIPT_DIR/Jenny.sln"
-else
-  SOLUTION_CANDIDATES=("$SCRIPT_DIR"/*.sln)
-  [[ -e "${SOLUTION_CANDIDATES[0]}" ]] || { echo "ERROR: No .sln found in $SCRIPT_DIR"; exit 1; }
-  SOLUTION="${SOLUTION_CANDIDATES[0]}"
-fi
 
 ARTIFACTS_DIR="$SCRIPT_DIR/Artifacts"
 DEST_MAIN="$ARTIFACTS_DIR/Jenny"
@@ -31,7 +12,7 @@ TMP_PUBLISH_ROOT="$SCRIPT_DIR/.publishout"
 NUGET_DIR="${NUGET_PACKAGES:-$HOME/.nuget/packages}"
 
 # ---------------------------
-# Only these files will remain in Artifacts
+# Only these files will remain in Artifacts (missing = skipped)
 # ---------------------------
 MAIN_FILES=(
   "DesperateDevs.Cli.Utils.dll"
@@ -69,47 +50,65 @@ PLUGIN_FILES=(
   "System.IO.Pipelines.dll"
 )
 
+# Projects to publish by *project name* (script will auto-find <Name>.csproj)
+PROJECT_NAMES_TO_PUBLISH=(
+  "Jenny.Generator.Cli"
+  "Jenny.Generator"
+  "Jenny"
+  "Jenny.Plugins"
+  "Jenny.Plugins.Unity"
+  "Jenny.Plugins.Roslyn"
+  "DesperateDevs.Roslyn"
+)
+
 # ---------------------------
 # Helpers
 # ---------------------------
-is_excluded_project() {
-  local name="$1"
-  case "$name" in
-    *Tests*|*Test*|*Benchmarks*|*Benchmark*|*Fixture*)
-      return 0 ;;
-  esac
-  return 1
+require_unity_refs() {
+  local ue="$SCRIPT_DIR/unity/Unity-2021.3.0f1/UnityEditor.dll"
+  local ug="$SCRIPT_DIR/unity/Unity-2021.3.0f1/UnityEngine.dll"
+  if [[ ! -f "$ue" || ! -f "$ug" ]]; then
+    echo "ERROR: Unity reference DLLs not found:" >&2
+    echo "  $ue" >&2
+    echo "  $ug" >&2
+    echo "Make sure they are committed (or Git LFS is enabled in CI checkout)." >&2
+    exit 1
+  fi
 }
 
-publish_one() {
+publish_csproj() {
   local csproj="$1"
   local name="$2"
   local out_dir="$TMP_PUBLISH_ROOT/$name"
 
   rm -rf "$out_dir"
   mkdir -p "$out_dir"
+
   echo "Publishing: $name"
   dotnet publish "$csproj" -c "$CONFIG" -o "$out_dir" \
-    -p:DebugSymbols=false -p:DebugType=None >/dev/null
+    -p:DebugSymbols=false -p:DebugType=None
+}
+
+# Find csproj by exact file name "<ProjectName>.csproj"
+find_csproj_by_name() {
+  local proj_name="$1"
+  local filename="$proj_name.csproj"
+  local found=""
+  found="$(find "$SCRIPT_DIR" -type f -name "$filename" 2>/dev/null | head -n 1 || true)"
+  [[ -n "$found" ]] && { echo "$found"; return 0; }
+  return 1
 }
 
 # Find a file by exact name in:
-#  1) temp publish outputs
-#  2) repo tree (in case it lands in bin/)
-#  3) NuGet cache
+#  1) temp publish outputs (preferred)
+#  2) NuGet cache (fallback)
 find_file_anywhere() {
   local filename="$1"
   local found=""
 
-  # 1) publish outputs
   found="$(find "$TMP_PUBLISH_ROOT" -type f -name "$filename" 2>/dev/null | head -n 1 || true)"
   [[ -n "$found" ]] && { echo "$found"; return 0; }
 
-  # 2) repo (bin/Release etc.)
-  found="$(find "$SCRIPT_DIR" -type f -name "$filename" 2>/dev/null | head -n 1 || true)"
-  [[ -n "$found" ]] && { echo "$found"; return 0; }
-
-  # 3) NuGet cache
   found="$(find "$NUGET_DIR" -type f -name "$filename" 2>/dev/null | head -n 1 || true)"
   [[ -n "$found" ]] && { echo "$found"; return 0; }
 
@@ -119,7 +118,6 @@ find_file_anywhere() {
 copy_if_found() {
   local filename="$1"
   local dest="$2"
-
   local src=""
   if src="$(find_file_anywhere "$filename")"; then
     cp -f "$src" "$dest/"
@@ -132,34 +130,21 @@ copy_if_found() {
 rm -rf "$ARTIFACTS_DIR" "$TMP_PUBLISH_ROOT"
 mkdir -p "$DEST_MAIN" "$DEST_PLUGINS" "$TMP_PUBLISH_ROOT"
 
-# ---------------------------
-# Publish non-test projects from solution
-# (Per-project publish avoids test-dependency leakage.)
-# ---------------------------
-PROJECT_PATHS=()
-while IFS= read -r line; do
-  [[ -n "$line" ]] || continue
-  PROJECT_PATHS+=("$line")
-done < <(dotnet sln "$SOLUTION" list | tail -n +3 | sed 's/^[[:space:]]*//')
+# Fail fast if we're about to build Unity projects but Unity refs aren't present
+if printf '%s\n' "${PROJECT_NAMES_TO_PUBLISH[@]}" | grep -qE '^Jenny\.Plugins\.Unity$|^Jenny\.Generator\.Unity\.Editor$'; then
+  require_unity_refs
+fi
 
-[[ "${#PROJECT_PATHS[@]}" -gt 0 ]] || { echo "ERROR: Could not read projects from solution."; exit 1; }
-
-for rel_path in "${PROJECT_PATHS[@]}"; do
-  local_csproj=""
-  if [[ -f "$rel_path" ]]; then
-    local_csproj="$rel_path"
-  elif [[ -f "$SCRIPT_DIR/$rel_path" ]]; then
-    local_csproj="$SCRIPT_DIR/$rel_path"
+# ---------------------------
+# Publish allowlisted projects (auto-discovered paths)
+# ---------------------------
+for name in "${PROJECT_NAMES_TO_PUBLISH[@]}"; do
+  csproj=""
+  if csproj="$(find_csproj_by_name "$name")"; then
+    publish_csproj "$csproj" "$name"
   else
-    continue
+    echo "WARN: csproj not found for project name '$name' (expected file '$name.csproj'), skipping" >&2
   fi
-
-  proj_name="$(basename "$local_csproj" .csproj)"
-  if is_excluded_project "$proj_name"; then
-    continue
-  fi
-
-  publish_one "$local_csproj" "$proj_name"
 done
 
 # ---------------------------
@@ -173,10 +158,6 @@ for f in "${PLUGIN_FILES[@]}"; do
   copy_if_found "$f" "$DEST_PLUGINS"
 done
 
-# Extra: handle the one name you wrote without ".dll" just in case
-copy_if_found "DesperateDevs.Cli.Utils" "$DEST_MAIN" || true
-
-# Cleanup temp
 rm -rf "$TMP_PUBLISH_ROOT"
 
 echo

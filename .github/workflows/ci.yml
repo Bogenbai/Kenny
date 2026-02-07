@@ -25,13 +25,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout (with submodules)
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
 
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "6.0.x"
+
+      - name: Check Unity reference DLLs exist
+        run: |
+          ls -la unity || true
+          ls -la unity/Unity-2021.3.0f1 || true
+          test -f unity/Unity-2021.3.0f1/UnityEditor.dll
+          test -f unity/Unity-2021.3.0f1/UnityEngine.dll
 
       - name: Make build script executable
         run: chmod +x ./build_jenny.sh
