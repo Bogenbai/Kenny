@@ -3,7 +3,7 @@
 # Kenny - A lovely .NET Code Generator. Jenny's younger brother.
 
 ![CI](https://github.com/Bogenbai/Kenny/actions/workflows/ci.yml/badge.svg)
-![Release](https://github.com/Bogenbai/Kenny/actions/workflows/release-on-tag.yml/badge.svg)
+![Release](https://github.com/Bogenbai/Kenny/actions/workflows/release.yml/badge.svg)
 [![Coverage Status](https://coveralls.io/repos/github/sschmid/Jenny/badge.svg)](https://coveralls.io/github/sschmid/Jenny)
 [![NuGet](https://img.shields.io/nuget/dt/Jenny)](https://www.nuget.org/packages?q=Jenny)
 [![License: MIT](https://img.shields.io/github/license/sschmid/Jenny)](https://github.com/sschmid/Jenny/blob/main/LICENSE.md)
