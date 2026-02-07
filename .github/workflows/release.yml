@@ -1,22 +1,68 @@
-name: Release
+name: Release on tag
 
-on: workflow_dispatch
+on:
+  push:
+    tags:
+      - "v*" # e.g. v1.0.0
+
+permissions:
+  contents: write
 
 jobs:
   build:
-    uses: sschmid/Jenny/.github/workflows/build.yml@main
+    name: Build Artifacts (Ubuntu)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "6.0.x"
+
+      - name: Make build script executable
+        run: chmod +x ./build_jenny.sh
+
+      - name: Build (build_jenny.sh)
+        run: ./build_jenny.sh
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Artifacts-Linux
+          path: |
+            Artifacts/**
+          if-no-files-found: error
+
   release:
+    name: Create GitHub Release
     needs: build
     runs-on: ubuntu-latest
-    steps:
-      - name: "Download packages"
-        uses: actions/download-artifact@v3
-        with:
-          name: ${{ github.event.repository.name }} NuGet Packages
 
-      - name: "Push to NuGet"
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: Artifacts-Linux
+          path: ./release-bundle
+
+      - name: Create archive with folder structure
         run: |
-          dotnet nuget push "*.nupkg" \
-            --api-key ${{ secrets.NUGET_API_KEY }} \
-            --skip-duplicate \
-            --source https://api.nuget.org/v3/index.json
+          cd release-bundle
+          zip -r -9 Jenny-${{ github.ref_name }}.zip .
+          cd ..
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Release ${{ github.ref_name }}"
+          body: |
+            Automated release for tag ${{ github.ref_name }}
+            Commit: ${{ github.sha }}
+          draft: false
+          prerelease: false
+          files: |
+            release-bundle/Jenny-${{ github.ref_name }}.zip
