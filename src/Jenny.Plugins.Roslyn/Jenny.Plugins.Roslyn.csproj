@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(DefaultNetTargetFramework)</TargetFramework>
+    <Version>1.0.1</Version>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DesperateDevs.Roslyn" Version="1.*" />
+  </ItemGroup>
+
+</Project>
