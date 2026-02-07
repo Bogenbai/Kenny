@@ -21,3 +21,5 @@ build
 tests/**/fixtures/temp
 coverage
 dist
+Artifacts
+*.DS_Store
