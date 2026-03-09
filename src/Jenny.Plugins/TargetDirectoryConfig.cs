@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using DesperateDevs.Serialization;
 
 namespace Jenny.Plugins
@@ -23,14 +22,16 @@ namespace Jenny.Plugins
                 return TargetDirectory;
             }
 
-            if (!TargetDirectory.StartsWith(projectPath.ProjectRoot))
+            var normalizedRoot = projectPath.ProjectRoot.Replace('\\', '/');
+
+            if (!TargetDirectory.StartsWith(normalizedRoot))
             {
                 throw new Exception(
                         $"Path {_targetDirectoryKey}: {TargetDirectory} is outside of the csproj direcotry: {projectPath.ProjectPath}. \n" +
-                        $"Did you mean: {projectPath.ProjectRoot + Path.DirectorySeparatorChar + TargetDirectory}?");
+                        $"Did you mean: {normalizedRoot + "/" + TargetDirectory}?");
             }
 
-            return TargetDirectory[(projectPath.ProjectRoot.Length + 1)..];
+            return TargetDirectory[(normalizedRoot.Length + 1)..];
         }
     }
 
@@ -40,6 +41,8 @@ namespace Jenny.Plugins
         {
             if (string.IsNullOrEmpty(directory) || directory == ".")
                 return "Generated";
+
+            directory = directory.Replace('\\', '/');
 
             if (directory.EndsWith("/", StringComparison.Ordinal))
                 directory = directory.Substring(0, directory.Length - 1);
