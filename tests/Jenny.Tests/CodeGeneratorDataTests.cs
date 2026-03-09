@@ -63,10 +63,7 @@ namespace Jenny.Tests
         public void ReplacesWithTemplate()
         {
             _data.ReplacePlaceholders("Test, ${testKey3:foreach:var $item = value;\\n}")
-                .Should().Be(@"Test, var testValue1 = value;
-var testValue2 = value;
-var testValue3 = value;
-");
+                .Should().Be("Test, var testValue1 = value;\nvar testValue2 = value;\nvar testValue3 = value;\n");
         }
 
         [Fact]

@@ -31,7 +31,7 @@ namespace Jenny.Plugins.Tests
             File.Copy(project, tempProject, true);
 
             var preProcessor = new TargetFrameworkProfilePreProcessor();
-            var preferences = new TestPreferences($"Jenny.Plugins.ProjectPath = {tempProject}");
+            var preferences = new TestPreferences($"Jenny.Plugins.ProjectPath = {tempProject.Replace('\\', '/')}");
             preProcessor.Configure(preferences);
             preProcessor.PreProcess();
             return File.ReadAllText(tempProject);
