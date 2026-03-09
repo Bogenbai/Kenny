@@ -42,9 +42,10 @@ namespace Jenny.Plugins.Tests
             File.Copy(project, tempProject, true);
 
             var postProcessor = new UpdateCsprojPostProcessor();
+            var normalizedTempPath = TempPath.Replace('\\', '/');
             var preferences = new TestPreferences($@"
-Jenny.Plugins.ProjectPath = {tempProject}
-Jenny.Plugins.TargetDirectory = Assets/Sources");
+Jenny.Plugins.ProjectPath = {tempProject.Replace('\\', '/')}
+Jenny.Plugins.TargetDirectory = {normalizedTempPath}/Assets/Sources");
             postProcessor.Configure(preferences);
 
             var files = new[]
